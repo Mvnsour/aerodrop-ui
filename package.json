@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@rainbow-me/rainbowkit": "^2.2.8",
+    "@rainbow-me/rainbowkit": "^2.2.4",
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0"
