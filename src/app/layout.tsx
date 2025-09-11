@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 import Header from '@/components/Header';
 
 export const metadata: Metadata = {
-  title: "Aero Drop",
+  title: "AeroDrop",
   description: "a decentralized airdrop platform",
 };
 
