@@ -1,20 +1,30 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { FaGithub } from "react-icons/fa";
 
-
 export default function Header() {
   return (
     <header>
-      <div>
-        <a href="https://github.com/Mvnsour/aerodrop-ui"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <FaGithub size={24}/>
-        </a>
-        <h1>AeroDrop</h1>
-      </div>
-      <ConnectButton />
+      <nav className="px-8 py-4.5 border-b-[1px] border-zinc-100 flex flex-row justify-between items-center bg-white xl:min-h-[77px]">
+            <div className="flex items-center gap-2.5 md:gap-6">
+                <a href="/" className="flex items-center gap-1 text-zinc-800">
+                    <h1 className="font-bold text-2xl hidden md:block">AeroDrop</h1>
+                </a>
+                <a
+                    href="https://github.com/Mvnsour/aerodrop-ui"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 transition-colors border-2 border-zinc-600 hover:border-zinc-500 cursor-alias hidden md:block"
+                >
+                    <FaGithub className="h-5 w-5 text-white" />
+                </a>
+            </div>
+            <h3 className="italic text-left hidden text-zinc-500 lg:block">
+                The most gas efficient airdrop contract on earth, built in huff 🐎
+            </h3>
+            <div className="flex items-center gap-4">
+                <ConnectButton />
+            </div>
+        </nav>
     </header>
   );
 }
