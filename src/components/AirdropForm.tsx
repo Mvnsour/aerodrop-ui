@@ -1,20 +1,36 @@
 "use client";
 import { InputForm } from "./ui/InputForm"
 import { useState } from "react";
-import { chainsToAeroDrop, erc20Abi, aerodropAbi } from "@/constants";
-import { useChainId } from 'wagmi'
+import { chainsToAeroDrop, erc20Abi, aeroDropAbi } from "@/constants";
+import { useChainId, useConfig, useAccount } from 'wagmi'
+import { readContract } from '@wagmi/core';
 
 export default function AirdropForm() {
   const [tokenAddress, setTokenAddress] = useState<string>("");
   const [recipients, setRecipients] = useState<string>("");
   const [amounts, setAmounts] = useState<string>("");
   const chainId = useChainId();
+  const config = useConfig();
+  const account = useAccount();
+
+  async function getApprovedAmount(aeroDropAddress: string | null): Promise<number> {
+    if (!aeroDropAddress) {
+      alert("AeroDrop contract address not found for this chain, please switch to a supported network.");
+      return 0;
+    }
+    // read from the chain if we have enough tokens
+    const result = await readContract(config, {
+      abi: erc20Abi,
+      address: tokenAddress as `0x${string}`,
+      functionName: "allowance",
+      args: [account.address, aeroDropAddress as `0x${string}`]
+    })
+    return result as number;
+  }
 
   async function handleSubmit() {
-    console.log({ tokenAddress, recipients, amounts });
     const aeroDropAddress = chainsToAeroDrop[chainId]["aerodrop"];
-    console.log("Aerodrop Contract Address:", aeroDropAddress);
-    console.log("Chain ID:", chainId);
+    const amount = await getApprovedAmount(aeroDropAddress);
   }
 
   return (

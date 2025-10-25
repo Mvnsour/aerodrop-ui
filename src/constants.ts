@@ -644,7 +644,7 @@ export const erc20Abi = [
     },
 ]
 
-export const aerodropAbi = [
+export const aeroDropAbi = [
     {
         type: "function",
         name: "airdropERC20",
