@@ -1,15 +1,20 @@
 "use client";
 import { InputForm } from "./ui/InputForm"
 import { useState } from "react";
-import { chainsToAerodrop, erc20Abi, aerodropAbi } from "@/constants";
+import { chainsToAeroDrop, erc20Abi, aerodropAbi } from "@/constants";
+import { useChainId } from 'wagmi'
 
 export default function AirdropForm() {
   const [tokenAddress, setTokenAddress] = useState<string>("");
   const [recipients, setRecipients] = useState<string>("");
   const [amounts, setAmounts] = useState<string>("");
+  const chainId = useChainId();
 
   async function handleSubmit() {
     console.log({ tokenAddress, recipients, amounts });
+    const aeroDropAddress = chainsToAeroDrop[chainId]["aerodrop"];
+    console.log("Aerodrop Contract Address:", aeroDropAddress);
+    console.log("Chain ID:", chainId);
   }
 
   return (
