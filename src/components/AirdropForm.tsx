@@ -30,7 +30,8 @@ export default function AirdropForm() {
 
   async function handleSubmit() {
     const aeroDropAddress = chainsToAeroDrop[chainId]["aerodrop"];
-    const amount = await getApprovedAmount(aeroDropAddress);
+    const approvedAmount = await getApprovedAmount(aeroDropAddress);
+    console.log(approvedAmount);
   }
 
   return (
@@ -59,7 +60,17 @@ export default function AirdropForm() {
       <button 
       onClick={handleSubmit}
       type="submit"
-      className="bg-blue-500 text-white px-4 py-2 rounded mt-4 hover:bg-blue-600">
+      className="
+      px-6 py-3
+      bg-blue-600 hover:bg-blue-700
+      text-white font-semibold
+      rounded-lg
+      shadow-sm
+      transition-colors duration-200
+      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+      disabled:opacity-50 disabled:cursor-not-allowed
+      "
+      >
         Send Tokens
       </button>
     </>
