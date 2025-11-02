@@ -13,25 +13,47 @@ export default function AirdropForm() {
   const config = useConfig();
   const account = useAccount();
 
-  async function getApprovedAmount(aeroDropAddress: string | null): Promise<number> {
-    if (!aeroDropAddress) {
-      alert("AeroDrop contract address not found for this chain, please switch to a supported network.");
-      return 0;
-    }
+  async function getApprovedAmount(aeroDropAddress: string | null): Promise<bigint> {
     // read from the chain if we have enough tokens
-    const result = await readContract(config, {
-      abi: erc20Abi,
-      address: tokenAddress as `0x${string}`,
-      functionName: "allowance",
-      args: [account.address, aeroDropAddress as `0x${string}`]
-    })
-    return result as number;
+    try {
+      const allowance = await readContract(config, {
+        abi: erc20Abi,
+        address: tokenAddress as `0x${string}`,
+        functionName: "allowance",
+        args: [account.address, aeroDropAddress as `0x${string}`]
+      })
+      console.log("Raw allowance response:", allowance);
+      // The response from 'allowance' is typically a BigInt
+      return allowance as bigint; // Assert type if necessary based on ABI return type
+    } catch (error) {
+            console.error("Error fetching allowance:", error);
+            // Rethrow or handle error appropriately
+            throw new Error("Failed to fetch token allowance.");
+      }
   }
 
   async function handleSubmit() {
     const aeroDropAddress = chainsToAeroDrop[chainId]["aerodrop"];
     const approvedAmount = await getApprovedAmount(aeroDropAddress);
     console.log(approvedAmount);
+
+      // Basic validation
+    if (!account.address) {
+        alert("Please connect your wallet.");
+        return;
+    }
+    if (!aeroDropAddress) {
+        alert("AeroDrop contract not found for the connected network. Please switch networks.");
+        return;
+    }
+    if (!tokenAddress || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
+       alert("Please enter a valid ERC20 token address (0x...).");
+       return;
+    }
+    if (!aeroDropAddress) {
+      alert("AeroDrop contract address not found for this chain, please switch to a supported network.");
+      return;
+    }
   }
 
   return (
