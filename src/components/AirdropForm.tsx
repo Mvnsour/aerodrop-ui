@@ -33,7 +33,7 @@ export default function AirdropForm() {
   }
 
   async function handleSubmit() {
-    const aeroDropAddress = chainsToAeroDrop[chainId]["aerodrop"];
+    const aeroDropAddress = chainsToAeroDrop[chainId]?.["aerodrop"];
     const approvedAmount = await getApprovedAmount(aeroDropAddress);
     console.log(approvedAmount);
 
