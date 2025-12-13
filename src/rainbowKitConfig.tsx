@@ -5,7 +5,7 @@ import { anvil, zksync, mainnet } from 'wagmi/chains';
 
 export default getDefaultConfig({
   appName: "AeroDrop",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID! || "",
   chains: [anvil, zksync, mainnet],
   ssr: false,
 })
