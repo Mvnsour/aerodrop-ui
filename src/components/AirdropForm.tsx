@@ -10,8 +10,10 @@ export default function AirdropForm() {
   const [recipients, setRecipients] = useState<string>("");
   const [amounts, setAmounts] = useState<string>("");
   const chainId = useChainId();
+  console.log("Current chainId:", chainId);
   const config = useConfig();
   const account = useAccount();
+  // const total : number = useMemo(() => calculateTotal(amounts), [amounts]);
 
   async function getApprovedAmount(aeroDropAddress: string | null): Promise<bigint> {
     // read from the chain if we have enough tokens
@@ -26,9 +28,9 @@ export default function AirdropForm() {
       // The response from 'allowance' is typically a BigInt
       return allowance as bigint; // Assert type if necessary based on ABI return type
     } catch (error) {
-            console.error("Error fetching allowance:", error);
-            // Rethrow or handle error appropriately
-            throw new Error("Failed to fetch token allowance.");
+        console.error("Error fetching allowance:", error);
+        // Rethrow or handle error appropriately
+        throw new Error("Failed to fetch token allowance.");
       }
   }
 
@@ -37,7 +39,6 @@ export default function AirdropForm() {
     const approvedAmount = await getApprovedAmount(aeroDropAddress);
     console.log(approvedAmount);
 
-      // Basic validation
     if (!account.address) {
         alert("Please connect your wallet.");
         return;
