@@ -15,31 +15,6 @@ export default function AirdropForm() {
   const account = useAccount();
   const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
 
-  async function getApprovedAmount(
-    spenderAddress: `0x${string}`,
-    erc20TokenAddress: `0x${string}`,
-    ownerAddress: `0x${string}`
-  ): Promise<bigint> {
-
-    console.log(`Spender: ${spenderAddress}, Token: ${erc20TokenAddress}, Owner: ${ownerAddress}`);
-    // read from the chain if we have enough tokens
-    try {
-      const allowance = await readContract(config, {
-        abi: erc20Abi,
-        address: erc20TokenAddress as `0x${string}`,
-        functionName: "allowance",
-        args: [ownerAddress, spenderAddress]
-      })
-      console.log("Raw allowance response:", allowance);
-      // The response from 'allowance' is typically a BigInt
-      return allowance as bigint; // Assert type if necessary based on ABI return type
-    } catch (error) {
-        console.error("Error fetching allowance:", error);
-        // Rethrow or handle error appropriately
-        throw new Error("Failed to fetch token allowance.");
-      }
-  }
-
   async function handleSubmit() {
     const aeroDropAddress = chainsToAeroDrop[chainId]?.["aerodrop"];
 
@@ -69,6 +44,31 @@ export default function AirdropForm() {
     } catch (error) {
       console.error("Error during submission process:", error);
     }
+  }
+
+  async function getApprovedAmount(
+    spenderAddress: `0x${string}`,
+    erc20TokenAddress: `0x${string}`,
+    ownerAddress: `0x${string}`
+  ): Promise<bigint> {
+
+    console.log(`Spender: ${spenderAddress}, Token: ${erc20TokenAddress}, Owner: ${ownerAddress}`);
+    // read from the chain if we have enough tokens
+    try {
+      const allowance = await readContract(config, {
+        abi: erc20Abi,
+        address: erc20TokenAddress as `0x${string}`,
+        functionName: "allowance",
+        args: [ownerAddress, spenderAddress]
+      })
+      console.log("Raw allowance response:", allowance);
+      // The response from 'allowance' is typically a BigInt
+      return allowance as bigint; // Assert type if necessary based on ABI return type
+    } catch (error) {
+        console.error("Error fetching allowance:", error);
+        // Rethrow or handle error appropriately
+        throw new Error("Failed to fetch token allowance.");
+      }
   }
 
   return (
