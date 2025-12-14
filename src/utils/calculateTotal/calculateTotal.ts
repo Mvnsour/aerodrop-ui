@@ -1,4 +1,7 @@
 function calculateTotal(amounts: string): number{
+  if (!amounts) {
+    return 0;
+  }
   // Split the amounts string by commas, convert to numbers, and sum them up
   const amountArray = amounts
     .split(/[\n,]+/) // Split by commas or new lines
