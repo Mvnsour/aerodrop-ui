@@ -1,4 +1,4 @@
-function calculateTotal(amounts: string): number{
+export function calculateTotal(amounts: string): number{
   if (!amounts) {
     return 0;
   }
