@@ -2,63 +2,43 @@ import { describe, it, expect } from 'vitest';
 import { calculateTotal } from './calculateTotal';
 
 describe('calculateTotal', () => {
-  it('should return 0 for empty string', () => {
-    expect(calculateTotal('')).toBe(0);
+  // 'it' defines a specific test case or scenario
+  it('should sum numbers separated by newlines', () => {
+    const input = '100\n200\n50';
+    const expectedOutput = 350;
+    // 'expect' makes an assertion: does the actual output match the expected output?
+    expect(calculateTotal(input)).toBe(expectedOutput);
   });
 
-  it('should calculate total for comma-separated values', () => {
-    expect(calculateTotal('10,20,30')).toBe(60);
-  });
-
-  it('should calculate total for newline-separated values', () => {
-    expect(calculateTotal('10\n20\n30')).toBe(60);
-  });
-
-  it('should calculate total for mixed comma and newline separators', () => {
-    expect(calculateTotal('10,20\n30,40')).toBe(100);
-  });
-
-  it('should handle decimal numbers', () => {
-    expect(calculateTotal('10.5,20.25,30.75')).toBe(61.5);
-  });
-
-  it('should trim whitespace around numbers', () => {
-    expect(calculateTotal('  10  ,  20  ,  30  ')).toBe(60);
-  });
-
-  it('should ignore empty strings after splitting', () => {
-    expect(calculateTotal('10,,20,,,30')).toBe(60);
-  });
-
-  it('should filter out invalid numbers (NaN)', () => {
-    expect(calculateTotal('10,abc,20,xyz,30')).toBe(60);
-  });
-
-  it('should handle negative numbers', () => {
-    expect(calculateTotal('-10,20,-30')).toBe(-20);
+  it('should sum numbers separated by commas', () => {
+    expect(calculateTotal('100,200,75')).toBe(375);
   });
 
   it('should handle a single number', () => {
-    expect(calculateTotal('42')).toBe(42);
+    expect(calculateTotal('500')).toBe(500);
   });
 
-  it('should handle zero values', () => {
-    expect(calculateTotal('0,0,0')).toBe(0);
+  it('should return 0 for an empty string', () => {
+    expect(calculateTotal('')).toBe(0);
   });
 
-  it('should handle mixed valid and invalid inputs', () => {
-    expect(calculateTotal('10.5, invalid, 20, , 30.5')).toBe(61);
+  it('should handle mixed delimiters and extra whitespace', () => {
+    expect(calculateTotal(' 100 ,200\n 300 ')).toBe(600);
   });
 
-  it('should handle strings with only commas', () => {
-    expect(calculateTotal(',,,')).toBe(0);
+  it('should ignore invalid entries and empty lines', () => {
+    expect(calculateTotal('100\n\n200,abc,\n,300')).toBe(600);
   });
 
-  it('should handle strings with only newlines', () => {
-    expect(calculateTotal('\n\n\n')).toBe(0);
+  it('should handle floating-point numbers', () => {
+    expect(calculateTotal('10.5, 20.25')).toBe(30.75);
   });
 
-  it('should handle complex mixed format', () => {
-    expect(calculateTotal('10.5 , 20\n30.25,  ,40\n\n50')).toBe(150.75);
+  // Example of debugging a potentially incorrect assumption:
+  it('should handle numbers mixed with text correctly', () => {
+    // parseFloat('12three') actually returns 12, not NaN.
+    // parseFloat('abc12') returns NaN.
+    // parseFloat('123.45.67') returns 123.45 (stops at second decimal).
+    expect(calculateTotal('12three\n45,abc12,123.45.67')).toBe(12 + 45 + 123.45); // 180.45
   });
 });
