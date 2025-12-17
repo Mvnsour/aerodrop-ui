@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { chainsToAeroDrop, erc20Abi, aeroDropAbi } from "@/constants";
 import { useChainId, useConfig, useAccount } from 'wagmi'
 import { readContract } from '@wagmi/core';
+import { calculateTotal } from "@/utils";
 
 export default function AirdropForm() {
   const [tokenAddress, setTokenAddress] = useState<string>("");
@@ -13,7 +14,7 @@ export default function AirdropForm() {
   console.log("Current chainId:", chainId);
   const config = useConfig();
   const account = useAccount();
-  const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
+  // const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
 
   async function handleSubmit() {
     const aeroDropAddress = chainsToAeroDrop[chainId]?.["aerodrop"];
