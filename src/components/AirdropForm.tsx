@@ -2,8 +2,8 @@
 import { InputForm } from "./ui/InputForm"
 import { useState, useMemo } from "react";
 import { chainsToAeroDrop, erc20Abi, aeroDropAbi } from "@/constants";
-import { useChainId, useConfig, useAccount } from 'wagmi'
-import { readContract } from '@wagmi/core';
+import { useChainId, useConfig, useAccount, useWriteContract } from 'wagmi'
+import { readContract, waitForTransactionReceipt } from '@wagmi/core';
 import { calculateTotal } from "@/utils";
 
 export default function AirdropForm() {
@@ -14,7 +14,8 @@ export default function AirdropForm() {
   console.log("Current chainId:", chainId);
   const config = useConfig();
   const account = useAccount();
-  // const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
+  const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
+  const { data: hash, isPending, writeContractAsync } = useWriteContract();
 
   async function handleSubmit() {
     const aeroDropAddress = chainsToAeroDrop[chainId]?.["aerodrop"];
@@ -31,10 +32,6 @@ export default function AirdropForm() {
        alert("Please enter a valid ERC20 token address (0x...).");
        return;
     }
-    if (!aeroDropAddress) {
-      alert("AeroDrop contract address not found for this chain, please switch to a supported network.");
-      return;
-    }
 
     try {
       const approvedAmount = await getApprovedAmount(
@@ -42,6 +39,22 @@ export default function AirdropForm() {
         tokenAddress as `0x${string}`,
         account.address);
       console.log(`Current allowance: ${approvedAmount}`);
+
+      if (approvedAmount < total) {
+        const approvalHash = await writeContractAsync({
+          abi: erc20Abi,
+          address: tokenAddress as `0x${string}`,
+          functionName: "approve",
+          args: [aeroDropAddress as `0x${string}`, BigInt(total)]
+        })
+
+        const approvalReceipt = await waitForTransactionReceipt(config, {
+          hash: approvalHash
+        });
+
+        console.log("Approval transaction confirmed:", approvalReceipt);
+      }
+
     } catch (error) {
       console.error("Error during submission process:", error);
     }
