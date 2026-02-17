@@ -5,7 +5,7 @@ interface ContractsConfig {
     }
 }
 
-export const chainsToAeroDrop: ContractsConfig = {
+export const chainsToAerodrop: ContractsConfig = {
     324: {
         aerodrop: "0x7e645Ea4386deb2E9e510D805461aA12db83fb5E",
         no_check: null,
@@ -644,7 +644,7 @@ export const erc20Abi = [
     },
 ]
 
-export const aeroDropAbi = [
+export const aerodropAbi = [
     {
         type: "function",
         name: "airdropERC20",
