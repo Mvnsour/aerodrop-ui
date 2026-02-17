@@ -1,7 +1,7 @@
 "use client";
 import { InputForm } from "./ui/InputForm"
 import { useState, useMemo } from "react";
-import { chainsToAeroDrop, erc20Abi, aeroDropAbi } from "@/constants";
+import { chainsToAerodrop, erc20Abi, aerodropAbi } from "@/constants";
 import { useChainId, useConfig, useAccount, useWriteContract } from 'wagmi'
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
 import { calculateTotal } from "@/utils";
@@ -18,13 +18,13 @@ export default function AirdropForm() {
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
 
   async function handleSubmit() {
-    const aeroDropAddress = chainsToAeroDrop[chainId]?.["aerodrop"];
+    const aerodropAddress = chainsToAerodrop[chainId]?.["aerodrop"];
 
     if (!account.address) {
         alert("Please connect your wallet.");
         return;
     }
-    if (!aeroDropAddress) {
+    if (!aerodropAddress) {
         alert("AeroDrop contract not found for the connected network. Please switch networks.");
         return;
     }
@@ -35,24 +35,83 @@ export default function AirdropForm() {
 
     try {
       const approvedAmount = await getApprovedAmount(
-        aeroDropAddress as `0x${string}`,
-        tokenAddress as `0x${string}`,
-        account.address);
+      aerodropAddress as `0x${string}`,
+      tokenAddress as `0x${string}`,
+      account.address);
       console.log(`Current allowance: ${approvedAmount}`);
 
       if (approvedAmount < total) {
-        const approvalHash = await writeContractAsync({
-          abi: erc20Abi,
-          address: tokenAddress as `0x${string}`,
-          functionName: "approve",
-          args: [aeroDropAddress as `0x${string}`, BigInt(total)]
-        })
+        try {
+          console.log(`current ${approvedAmount}, requiered ${total}`);
+          // initiate approval transaction
+          const approvalHash = await writeContractAsync({
+            abi: erc20Abi,
+            address: tokenAddress as `0x${string}`,
+            functionName: "approve",
+            args: [aerodropAddress as `0x${string}`, BigInt(total)]
+          })
 
-        const approvalReceipt = await waitForTransactionReceipt(config, {
-          hash: approvalHash
-        });
+          console.log("Approval transaction sent, hash:", approvalHash);
+          // wait confirmation
+          console.log("Waiting for apporoval confirmation...");
+          const approvalReceipt = await waitForTransactionReceipt(config, {
+            hash: approvalHash,
+          })
+          console.log("Approval transaction confirmed:", approvalReceipt);
 
-        console.log("Approval transaction confirmed:", approvalReceipt);
+          // Check receipt status for success
+          if (approvalReceipt.status !== 'success') {
+            console.error("Approval transaction failed:", approvalReceipt);
+            // Handle UI feedback for failed transaction
+            return;
+            }
+        } catch (error) {
+          console.error("Error during approval process:", error);
+          return; // Stop further execution if approval fails
+        }
+      } else {
+        const executeAirdrop = async () => {
+          try {
+            console.log("Initiating airdrop transaction...");
+            const recipientAddresses = recipients
+            .split(/[, \n]+/) // Split by comma, space, or newline
+            .map((addr) => addr.trim()) // Remove whitespace
+            .filter(addr => addr !== "") // Remove empty entries
+            .map(addr => addr as `0x${string}`); // Cast to address type
+
+            const transferAmounts = amounts
+            .split(/[, \n]+/)
+            .map((amt) => amt.trim())
+            .filter(amt => amt !== "")
+            .map(amount => BigInt(amount)); // Convert amounts to BigInt
+
+            if (recipientAddresses.length !== transferAmounts.length) {
+            throw new Error("Mismatch between number of recipients and amounts.");
+            }
+
+            // initiate airdrop transaction
+            const airdropHash= await writeContractAsync({
+              abi: aerodropAbi, // Spender contract's ABI
+              address: aerodropAddress as `0x${string}`, // Spender contract's address
+              functionName: 'airdropERC20',
+              args: [
+                tokenAddress as `0x${string}`, // 1. Token being sent
+                recipientAddresses,            // 2. Array of recipient addresses
+                transferAmounts                // 3. Array of amounts (BigInt)
+              ]
+            });
+            console.log("Airdrop transaction sent, hash:", airdropHash);
+
+            // Optional: Wait for airdrop confirmation if needed for further UI updates
+            console.log("Waiting for airdrop confirmation...");
+            const airdropReceipt = await waitForTransactionReceipt(config, { hash: airdropHash });
+            console.log("Airdrop confirmed:", airdropReceipt);
+            // Update UI based on success/failure
+
+          } catch (error) {
+            console.error("Error during airdrop process:", error); // Handle UI feedback for error
+          }
+        }
       }
 
     } catch (error) {
