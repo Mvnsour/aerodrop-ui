@@ -17,6 +17,51 @@ export default function AirdropForm() {
   const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
   const { data: hash, isPending, writeContractAsync } = useWriteContract();
 
+  const executeAirdrop = async () => {
+    try {
+      console.log("Executing airdropERC20...");
+      const recipientAddresses = recipients // Assuming 'recipients' is a string like "addr1, addr2\naddr3"
+        .split(/[, \n]+/) // Split by comma, space, or newline
+        .map((addr) => addr.trim()) // Remove whitespace
+        .filter(addr => addr !== "") // Remove empty entries
+        .map(addr => addr as `0x${string}`); // Cast to address type
+ 
+      const transferAmounts = amounts // Assuming 'amounts' is a string like "10, 20\n30"
+        .split(/[, \n]+/)
+        .map((amt) => amt.trim())
+        .filter(amt => amt !== "")
+        .map(amount => BigInt(amount)); // Convert amounts to BigInt
+ 
+      if (recipientAddresses.length !== transferAmounts.length) {
+        throw new Error("Mismatch between number of recipients and amounts.");
+      }
+ 
+      // Initiate Airdrop Transaction
+      const airdropHash = await writeContractAsync({
+        abi: aerodropAbi, // Spender contract's ABI
+        address: chainsToAerodrop[chainId]?.["aerodrop"] as `0x${string}`, // Spender contract's address
+        functionName: "airdropERC20",
+        args: [
+          tokenAddress as `0x${string}`, // 1. Token being sent
+          recipientAddresses,            // 2. Array of recipient addresses
+          transferAmounts,               // 3. Array of amounts (BigInt)
+          BigInt(total),
+        ],
+      });
+      console.log("Airdrop transaction hash:", airdropHash);
+ 
+      // Optional: Wait for airdrop confirmation if needed for further UI updates
+      console.log("Waiting for airdrop confirmation...");
+      const airdropReceipt = await waitForTransactionReceipt(config, { hash: airdropHash });
+      console.log("Airdrop confirmed:", airdropReceipt);
+      // Update UI based on success/failure
+ 
+    } catch (err) {
+      console.error("Airdrop failed:", err);
+      // Handle UI feedback for error
+    }
+  };
+  
   async function handleSubmit() {
     const aerodropAddress = chainsToAerodrop[chainId]?.["aerodrop"];
 
@@ -33,115 +78,47 @@ export default function AirdropForm() {
        return;
     }
 
-    try {
-      const approvedAmount = await getApprovedAmount(
-      aerodropAddress as `0x${string}`,
-      tokenAddress as `0x${string}`,
-      account.address);
-      console.log(`Current allowance: ${approvedAmount}`);
-
-      if (approvedAmount < total) {
-        try {
-          console.log(`current ${approvedAmount}, requiered ${total}`);
-          // initiate approval transaction
-          const approvalHash = await writeContractAsync({
-            abi: erc20Abi,
-            address: tokenAddress as `0x${string}`,
-            functionName: "approve",
-            args: [aerodropAddress as `0x${string}`, BigInt(total)]
-          })
-
-          console.log("Approval transaction sent, hash:", approvalHash);
-          // wait confirmation
-          console.log("Waiting for apporoval confirmation...");
-          const approvalReceipt = await waitForTransactionReceipt(config, {
-            hash: approvalHash,
-          })
-          console.log("Approval transaction confirmed:", approvalReceipt);
-
-          // Check receipt status for success
-          if (approvalReceipt.status !== 'success') {
-            console.error("Approval transaction failed:", approvalReceipt);
-            // Handle UI feedback for failed transaction
-            return;
-            }
-        } catch (error) {
-          console.error("Error during approval process:", error);
-          return; // Stop further execution if approval fails
+    const approvedAmount = await readContract(config, {
+      abi: erc20Abi,
+      address: tokenAddress as `0x${string}`,
+      functionName: "allowance",
+      args: [account.address, aerodropAddress as `0x${string}`],
+    }) as bigint;
+ 
+    if (approvedAmount < BigInt(total)) { 
+      try {
+        console.log(`Approval needed: Current ${approvedAmount}, Required ${total}`);
+        // Initiate Approve Transaction
+        const approvalHash = await writeContractAsync({
+          abi: erc20Abi, // ERC20 token ABI
+          address: tokenAddress as `0x${string}`, // ERC20 token address
+          functionName: "approve",
+          args: [aerodropAddress as `0x${string}`, BigInt(total)], // Spender address and total amount
+        });
+        console.log("Approval transaction hash:", approvalHash);
+ 
+        // Wait for the transaction to be mined
+        console.log("Waiting for approval confirmation...");
+        const approvalReceipt = await waitForTransactionReceipt(config, { // Pass config here!
+          hash: approvalHash,
+        });
+        console.log("Approval confirmed:", approvalReceipt);
+ 
+        if (approvalReceipt.status === "success") {
+          console.log("Approval successful, proceeding to airdrop.");
+          await executeAirdrop(); // Call airdrop AFTER successful approval
+        } else {
+          console.error("Approval transaction failed.");
+          // Handle UI feedback
         }
-      } else {
-        const executeAirdrop = async () => {
-          try {
-            console.log("Initiating airdrop transaction...");
-            const recipientAddresses = recipients
-            .split(/[, \n]+/) // Split by comma, space, or newline
-            .map((addr) => addr.trim()) // Remove whitespace
-            .filter(addr => addr !== "") // Remove empty entries
-            .map(addr => addr as `0x${string}`); // Cast to address type
-
-            const transferAmounts = amounts
-            .split(/[, \n]+/)
-            .map((amt) => amt.trim())
-            .filter(amt => amt !== "")
-            .map(amount => BigInt(amount)); // Convert amounts to BigInt
-
-            if (recipientAddresses.length !== transferAmounts.length) {
-            throw new Error("Mismatch between number of recipients and amounts.");
-            }
-
-            // initiate airdrop transaction
-            const airdropHash= await writeContractAsync({
-              abi: aerodropAbi, // Spender contract's ABI
-              address: aerodropAddress as `0x${string}`, // Spender contract's address
-              functionName: 'airdropERC20',
-              args: [
-                tokenAddress as `0x${string}`, // 1. Token being sent
-                recipientAddresses,            // 2. Array of recipient addresses
-                transferAmounts                // 3. Array of amounts (BigInt)
-              ]
-            });
-            console.log("Airdrop transaction sent, hash:", airdropHash);
-
-            // Optional: Wait for airdrop confirmation if needed for further UI updates
-            console.log("Waiting for airdrop confirmation...");
-            const airdropReceipt = await waitForTransactionReceipt(config, { hash: airdropHash });
-            console.log("Airdrop confirmed:", airdropReceipt);
-            // Update UI based on success/failure
-
-          } catch (error) {
-            console.error("Error during airdrop process:", error); // Handle UI feedback for error
-          }
-        }
+      } catch (err) {
+        console.error("Approval process error:", err);
+        // Handle UI feedback
       }
-
-    } catch (error) {
-      console.error("Error during submission process:", error);
+    } else {
+      console.log("Sufficient allowance, proceeding directly to airdrop.");
+      await executeAirdrop(); // Call airdrop directly
     }
-  }
-
-  async function getApprovedAmount(
-    spenderAddress: `0x${string}`,
-    erc20TokenAddress: `0x${string}`,
-    ownerAddress: `0x${string}`
-  ): Promise<bigint> {
-
-    console.log(`Spender: ${spenderAddress}, Token: ${erc20TokenAddress}, Owner: ${ownerAddress}`);
-    // read from the chain if we have enough tokens
-    try {
-      const allowance = await readContract(config, {
-        abi: erc20Abi,
-        address: erc20TokenAddress as `0x${string}`,
-        functionName: "allowance",
-        args: [ownerAddress, spenderAddress]
-      })
-      console.log("Raw allowance response:", allowance);
-      // The response from 'allowance' is typically a BigInt
-      return allowance as bigint; // Assert type if necessary based on ABI return type
-    } catch (error) {
-        console.error("Error fetching allowance:", error);
-        // Rethrow or handle error appropriately
-        throw new Error("Failed to fetch token allowance.");
-      }
   }
 
   return (
