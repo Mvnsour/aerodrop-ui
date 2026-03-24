@@ -5,6 +5,7 @@ import { chainsToAerodrop, erc20Abi, aerodropAbi } from "@/constants";
 import { useChainId, useConfig, useAccount, useWriteContract } from 'wagmi'
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
 import { calculateTotal } from "@/utils";
+import { SubmitButton } from "./SubmitButton";
 
 export default function AirdropForm() {
   const [tokenAddress, setTokenAddress] = useState<string>("");
@@ -15,7 +16,8 @@ export default function AirdropForm() {
   const config = useConfig();
   const account = useAccount();
   const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
-  const { data: hash, isPending, writeContractAsync } = useWriteContract();
+  const { data: hash, isPending, error, writeContractAsync } = useWriteContract();
+  const [isConfirming, setIsConfirming] = useState<boolean>(false);
 
   const executeAirdrop = async () => {
     try {
@@ -51,14 +53,16 @@ export default function AirdropForm() {
       console.log("Airdrop transaction hash:", airdropHash);
  
       // Optional: Wait for airdrop confirmation if needed for further UI updates
+      setIsConfirming(true);
       console.log("Waiting for airdrop confirmation...");
       const airdropReceipt = await waitForTransactionReceipt(config, { hash: airdropHash });
       console.log("Airdrop confirmed:", airdropReceipt);
       // Update UI based on success/failure
- 
     } catch (err) {
       console.error("Airdrop failed:", err);
       // Handle UI feedback for error
+    } finally {
+      setIsConfirming(false);
     }
   };
   
@@ -98,11 +102,13 @@ export default function AirdropForm() {
         console.log("Approval transaction hash:", approvalHash);
  
         // Wait for the transaction to be mined
+        setIsConfirming(true);
         console.log("Waiting for approval confirmation...");
         const approvalReceipt = await waitForTransactionReceipt(config, { // Pass config here!
           hash: approvalHash,
         });
         console.log("Approval confirmed:", approvalReceipt);
+        setIsConfirming(false);
  
         if (approvalReceipt.status === "success") {
           console.log("Approval successful, proceeding to airdrop.");
@@ -144,21 +150,11 @@ export default function AirdropForm() {
           onChange={e => setAmounts(e.target.value)}
           large={true}
         />
-        <button 
-        onClick={handleSubmit}
-        type="submit"
-        className="
-        px-6 py-3
-        bg-blue-600 hover:bg-blue-700
-        text-white font-semibold
-        rounded-lg
-        shadow-sm
-        transition-colors duration-200
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ">
-          Send Tokens
-        </button>
+        <SubmitButton
+          isPending={isPending}
+          isConfirming={isConfirming}
+          error={error}
+        />
       </form>
     </>
   );
