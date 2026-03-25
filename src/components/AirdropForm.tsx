@@ -1,6 +1,6 @@
 "use client";
 import { InputForm } from "./ui/InputForm"
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { chainsToAerodrop, erc20Abi, aerodropAbi } from "@/constants";
 import { useChainId, useConfig, useAccount, useWriteContract } from 'wagmi'
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
@@ -18,6 +18,36 @@ export default function AirdropForm() {
   const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
   const { data: hash, isPending, error, writeContractAsync } = useWriteContract();
   const [isConfirming, setIsConfirming] = useState<boolean>(false);
+
+  // Retrieve data on component mount
+useEffect(() => {
+  const savedAddress = localStorage.getItem('aerodropTokenAddress');
+  const savedRecipients = localStorage.getItem('aerodropRecipients');
+  const savedAmounts = localStorage.getItem('aerodropAmounts');
+  if (savedAddress) setTokenAddress(savedAddress);
+  if (savedRecipients) setRecipients(savedRecipients);
+  if (savedAmounts) setAmounts(savedAmounts);
+}, []); // Empty dependency array: run only on mount
+
+// Save data when tokenAddress state changes
+useEffect(() => {
+  if (tokenAddress) { // Avoid saving initial empty state if desired
+    localStorage.setItem('aerodropTokenAddress', tokenAddress);
+  }
+}, [tokenAddress]); // Dependency: run when tokenAddress changes
+
+// Similar useEffect hooks needed for recipients and amounts states
+useEffect(() => {
+  if(recipients) {
+    localStorage.setItem('aerodropRecipients', recipients);
+  }
+}, [recipients]);
+
+useEffect(() => {
+  if(amounts) {
+    localStorage.setItem('aerodropAmounts', amounts);
+  }
+}, [amounts]);
 
   const executeAirdrop = async () => {
     try {
