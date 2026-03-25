@@ -2,52 +2,79 @@
 import { InputForm } from "./ui/InputForm"
 import { useState, useMemo, useEffect } from "react";
 import { chainsToAerodrop, erc20Abi, aerodropAbi } from "@/constants";
-import { useChainId, useConfig, useAccount, useWriteContract } from 'wagmi'
+import { useChainId, useConfig, useAccount, useWriteContract, useReadContracts, useWaitForTransactionReceipt } from 'wagmi'
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
 import { calculateTotal } from "@/utils";
 import { SubmitButton } from "./SubmitButton";
+import { TokenDetails } from "./TokenDetails";
 
 export default function AirdropForm() {
   const [tokenAddress, setTokenAddress] = useState<string>("");
   const [recipients, setRecipients] = useState<string>("");
   const [amounts, setAmounts] = useState<string>("");
+
   const chainId = useChainId();
   console.log("Current chainId:", chainId);
   const config = useConfig();
   const account = useAccount();
   const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
   const { data: hash, isPending, error, writeContractAsync } = useWriteContract();
-  const [isConfirming, setIsConfirming] = useState<boolean>(false);
+  // useWaitForTransactionReceipt watches hash automatically and gives isConfirming, isConfirmed, isError for free
+  const { isLoading: isConfirming, isSuccess: isConfirmed, isError } = useWaitForTransactionReceipt({
+    confirmations: 1,
+    hash,
+  });
+
+  // Inside your component...
+  const { data: tokenData } = useReadContracts({
+    contracts: [
+      { // Call 1: Get token decimals
+        address: tokenAddress as `0x${string}`,
+        abi: erc20Abi,
+        functionName: 'decimals',
+      },
+      { // Call 2: Get token name
+        address: tokenAddress as `0x${string}`,
+        abi: erc20Abi,
+        functionName: 'name',
+      },
+      { // Call 3: Get user's token balance (optional, for UI feedback)
+        address: tokenAddress as `0x${string}`,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [account.address]
+      }
+    ],
+    // Conditionally enable the hook, e.g., only run if tokenAddress is valid
+    query: { enabled: /^0x[a-fA-F0-9]{40}$/.test(tokenAddress) }
+  });
+
+  // Access results (tokenData will be an array):
+  const tokenDecimals = tokenData?.[0]?.result as number | undefined; // Result of the 'decimals' call
+  const tokenName = tokenData?.[1]?.result as string | undefined; // Result of the 'name' call
 
   // Retrieve data on component mount
-useEffect(() => {
-  const savedAddress = localStorage.getItem('aerodropTokenAddress');
-  const savedRecipients = localStorage.getItem('aerodropRecipients');
-  const savedAmounts = localStorage.getItem('aerodropAmounts');
-  if (savedAddress) setTokenAddress(savedAddress);
-  if (savedRecipients) setRecipients(savedRecipients);
-  if (savedAmounts) setAmounts(savedAmounts);
-}, []); // Empty dependency array: run only on mount
+  useEffect(() => {
+    const savedAddress = localStorage.getItem('aerodropTokenAddress');
+    const savedRecipients = localStorage.getItem('aerodropRecipients');
+    const savedAmounts = localStorage.getItem('aerodropAmounts');
+    if (savedAddress) setTokenAddress(savedAddress);
+    if (savedRecipients) setRecipients(savedRecipients);
+    if (savedAmounts) setAmounts(savedAmounts);
+  }, []); // Empty dependency array: run only on mount
 
-// Save data when tokenAddress state changes
-useEffect(() => {
-  if (tokenAddress) { // Avoid saving initial empty state if desired
+  // Save data when tokenAddress state changes
+  useEffect(() => {
     localStorage.setItem('aerodropTokenAddress', tokenAddress);
-  }
-}, [tokenAddress]); // Dependency: run when tokenAddress changes
+  }, [tokenAddress]); // Dependency: run when tokenAddress changes
 
-// Similar useEffect hooks needed for recipients and amounts states
-useEffect(() => {
-  if(recipients) {
+  useEffect(() => {
     localStorage.setItem('aerodropRecipients', recipients);
-  }
-}, [recipients]);
+  }, [recipients]);
 
-useEffect(() => {
-  if(amounts) {
+  useEffect(() => {
     localStorage.setItem('aerodropAmounts', amounts);
-  }
-}, [amounts]);
+  }, [amounts]);
 
   const executeAirdrop = async () => {
     try {
@@ -57,22 +84,22 @@ useEffect(() => {
         .map((addr) => addr.trim()) // Remove whitespace
         .filter(addr => addr !== "") // Remove empty entries
         .map(addr => addr as `0x${string}`); // Cast to address type
- 
+
       const transferAmounts = amounts // Assuming 'amounts' is a string like "10, 20\n30"
         .split(/[, \n]+/)
         .map((amt) => amt.trim())
         .filter(amt => amt !== "")
         .map(amount => BigInt(amount)); // Convert amounts to BigInt
- 
+
       if (recipientAddresses.length !== transferAmounts.length) {
         throw new Error("Mismatch between number of recipients and amounts.");
       }
- 
+
       // Initiate Airdrop Transaction
       const airdropHash = await writeContractAsync({
         abi: aerodropAbi, // Spender contract's ABI
         address: chainsToAerodrop[chainId]?.["aerodrop"] as `0x${string}`, // Spender contract's address
-        functionName: "airdropERC20",
+        functionName: 'airdropERC20',
         args: [
           tokenAddress as `0x${string}`, // 1. Token being sent
           recipientAddresses,            // 2. Array of recipient addresses
@@ -81,45 +108,44 @@ useEffect(() => {
         ],
       });
       console.log("Airdrop transaction hash:", airdropHash);
- 
+
       // Optional: Wait for airdrop confirmation if needed for further UI updates
-      setIsConfirming(true);
       console.log("Waiting for airdrop confirmation...");
       const airdropReceipt = await waitForTransactionReceipt(config, { hash: airdropHash });
       console.log("Airdrop confirmed:", airdropReceipt);
       // Update UI based on success/failure
+
     } catch (err) {
       console.error("Airdrop failed:", err);
       // Handle UI feedback for error
-    } finally {
-      setIsConfirming(false);
     }
   };
-  
+
   async function handleSubmit() {
     const aerodropAddress = chainsToAerodrop[chainId]?.["aerodrop"];
 
     if (!account.address) {
-        alert("Please connect your wallet.");
-        return;
+      alert("Please connect your wallet.");
+      return;
     }
     if (!aerodropAddress) {
-        alert("AeroDrop contract not found for the connected network. Please switch networks.");
-        return;
+      alert("AeroDrop contract not found for the connected network. Please switch networks.");
+      return;
     }
     if (!tokenAddress || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
-       alert("Please enter a valid ERC20 token address (0x...).");
-       return;
+      alert("Please enter a valid ERC20 token address (0x...).");
+      return;
     }
 
+    // Conditional check
     const approvedAmount = await readContract(config, {
       abi: erc20Abi,
       address: tokenAddress as `0x${string}`,
       functionName: "allowance",
       args: [account.address, aerodropAddress as `0x${string}`],
     }) as bigint;
- 
-    if (approvedAmount < BigInt(total)) { 
+
+    if (approvedAmount < total) {
       try {
         console.log(`Approval needed: Current ${approvedAmount}, Required ${total}`);
         // Initiate Approve Transaction
@@ -130,16 +156,14 @@ useEffect(() => {
           args: [aerodropAddress as `0x${string}`, BigInt(total)], // Spender address and total amount
         });
         console.log("Approval transaction hash:", approvalHash);
- 
+
         // Wait for the transaction to be mined
-        setIsConfirming(true);
         console.log("Waiting for approval confirmation...");
         const approvalReceipt = await waitForTransactionReceipt(config, { // Pass config here!
           hash: approvalHash,
         });
         console.log("Approval confirmed:", approvalReceipt);
-        setIsConfirming(false);
- 
+
         if (approvalReceipt.status === "success") {
           console.log("Approval successful, proceeding to airdrop.");
           await executeAirdrop(); // Call airdrop AFTER successful approval
@@ -180,9 +204,16 @@ useEffect(() => {
           onChange={e => setAmounts(e.target.value)}
           large={true}
         />
+        <TokenDetails
+          tokenName={tokenName}
+          tokenDecimals={tokenDecimals}
+          total={total}
+        />
         <SubmitButton
           isPending={isPending}
           isConfirming={isConfirming}
+          isConfirmed={isConfirmed}
+          isError={isError}
           error={error}
         />
       </form>
