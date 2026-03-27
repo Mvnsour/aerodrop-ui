@@ -1,12 +1,10 @@
 "use client";
-import { InputForm } from "./ui/InputForm"
+import { InputForm, SubmitButton, TokenDetails, ErrorModal } from "@/components/ui"
 import { useState, useMemo, useEffect } from "react";
 import { chainsToAerodrop, erc20Abi, aerodropAbi } from "@/constants";
 import { useChainId, useConfig, useAccount, useWriteContract, useReadContracts, useWaitForTransactionReceipt } from 'wagmi'
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
 import { calculateTotal } from "@/utils";
-import { SubmitButton } from "./ui/SubmitButton";
-import { TokenDetails } from "./ui/TokenDetails";
 
 export default function AirdropForm() {
   const [tokenAddress, setTokenAddress] = useState<string>("");
