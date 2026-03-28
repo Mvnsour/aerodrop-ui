@@ -10,9 +10,9 @@ export default function AirdropForm() {
   const [tokenAddress, setTokenAddress] = useState<string>("");
   const [recipients, setRecipients] = useState<string>("");
   const [amounts, setAmounts] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const chainId = useChainId();
-  console.log("Current chainId:", chainId);
   const config = useConfig();
   const account = useAccount();
   const total: number = useMemo(() => calculateTotal(amounts), [amounts]);
@@ -115,7 +115,7 @@ export default function AirdropForm() {
 
     } catch (err) {
       console.error("Airdrop failed:", err);
-      // Handle UI feedback for error
+      setErrorMessage("Airdrop transaction failed. Please try again.");
     }
   };
 
@@ -167,11 +167,11 @@ export default function AirdropForm() {
           await executeAirdrop(); // Call airdrop AFTER successful approval
         } else {
           console.error("Approval transaction failed.");
-          // Handle UI feedback
+          setErrorMessage("Approval transaction failed. Please try again.");
         }
       } catch (err) {
         console.error("Approval process error:", err);
-        // Handle UI feedback
+        setErrorMessage("Approval failed. Please try again.");
       }
     } else {
       console.log("Sufficient allowance, proceeding directly to airdrop.");
@@ -181,6 +181,12 @@ export default function AirdropForm() {
 
   return (
     <>
+    {errorMessage && (
+        <ErrorModal
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
+      )}
       <form onSubmit={e => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
         <InputForm
           label="Token Address"
