@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 interface ErrorModalProps {
   message: string;
   onClose: () => void;
