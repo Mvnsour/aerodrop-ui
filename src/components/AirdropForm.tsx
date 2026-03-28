@@ -11,6 +11,8 @@ export default function AirdropForm() {
   const [recipients, setRecipients] = useState<string>("");
   const [amounts, setAmounts] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showConfirmed, setShowConfirmed] = useState<boolean>(false);
+  const [showError, setShowError] = useState<boolean>(false);
 
   const chainId = useChainId();
   const config = useConfig();
@@ -22,6 +24,24 @@ export default function AirdropForm() {
     confirmations: 1,
     hash,
   });
+
+  // Show "Transaction confirmed" for 10s then reset to "Send Tokens"
+  useEffect(() => {
+    if (isConfirmed) {
+      setShowConfirmed(true);
+      const timer = setTimeout(() => setShowConfirmed(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [isConfirmed]);
+
+  // Show error state for 5s then reset to "Send Tokens"
+  useEffect(() => {
+    if (isError || error) {
+      setShowError(true);
+      const timer = setTimeout(() => setShowError(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isError, error]);
 
   // Inside your component...
   const { data: tokenData } = useReadContracts({
@@ -181,7 +201,7 @@ export default function AirdropForm() {
 
   return (
     <>
-    {errorMessage && (
+      {errorMessage && (
         <ErrorModal
           message={errorMessage}
           onClose={() => setErrorMessage(null)}
@@ -216,8 +236,8 @@ export default function AirdropForm() {
         <SubmitButton
           isPending={isPending}
           isConfirming={isConfirming}
-          isConfirmed={isConfirmed}
-          isError={isError}
+          isConfirmed={showConfirmed}
+          isError={showError}
           error={error}
         />
       </form>
