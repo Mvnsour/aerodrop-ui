@@ -32,14 +32,10 @@ function getButtonContent(
     );
   }
   if (error || isError) {
-    return (
-      <div className="flex items-center justify-center gap-2 w-full">
-        <span>Error, see console.</span>
-      </div>
-    );
+    return "Transaction failed";
   }
   if (isConfirmed) {
-    return "Transaction confirmed.";
+    return "Transaction confirmed";
   }
   return "Send Tokens";
 }
@@ -63,6 +59,7 @@ export function SubmitButton({
         transition-colors duration-200
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
         disabled:opacity-50 disabled:cursor-not-allowed
+        cursor-pointer
       "
     >
       {getButtonContent(isPending, isConfirming, isConfirmed, isError, error)}
