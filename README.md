@@ -157,9 +157,3 @@ Deployed on **Vercel** for fast, reliable hosting with automatic preview deploym
 **No double-trigger** — the submit button uses `onClick` only, not `onSubmit` on the form, to avoid double-firing.
 
 **Additive component design** — new features (TokenDetails, ErrorModal, SubmitButton) were extracted into a `./ui/` subfolder without modifying the core AirdropForm structure.
-
----
-
-## License
-
-MIT
