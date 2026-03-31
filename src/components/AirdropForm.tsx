@@ -96,7 +96,6 @@ export default function AirdropForm() {
 
   const executeAirdrop = async () => {
     try {
-      console.log("Executing airdropERC20...");
       const recipientAddresses = recipients // Assuming 'recipients' is a string like "addr1, addr2\naddr3"
         .split(/[, \n]+/) // Split by comma, space, or newline
         .map((addr) => addr.trim()) // Remove whitespace
@@ -125,16 +124,12 @@ export default function AirdropForm() {
           BigInt(total),
         ],
       });
-      console.log("Airdrop transaction hash:", airdropHash);
 
       // Optional: Wait for airdrop confirmation if needed for further UI updates
-      console.log("Waiting for airdrop confirmation...");
       const airdropReceipt = await waitForTransactionReceipt(config, { hash: airdropHash });
-      console.log("Airdrop confirmed:", airdropReceipt);
       // Update UI based on success/failure
 
     } catch (err) {
-      console.error("Airdrop failed:", err);
       setErrorMessage("Airdrop transaction failed. Please try again.");
     }
   };
@@ -165,7 +160,6 @@ export default function AirdropForm() {
 
     if (approvedAmount < total) {
       try {
-        console.log(`Approval needed: Current ${approvedAmount}, Required ${total}`);
         // Initiate Approve Transaction
         const approvalHash = await writeContractAsync({
           abi: erc20Abi, // ERC20 token ABI
@@ -173,28 +167,21 @@ export default function AirdropForm() {
           functionName: "approve",
           args: [aerodropAddress as `0x${string}`, BigInt(total)], // Spender address and total amount
         });
-        console.log("Approval transaction hash:", approvalHash);
 
         // Wait for the transaction to be mined
-        console.log("Waiting for approval confirmation...");
         const approvalReceipt = await waitForTransactionReceipt(config, { // Pass config here!
           hash: approvalHash,
         });
-        console.log("Approval confirmed:", approvalReceipt);
 
         if (approvalReceipt.status === "success") {
-          console.log("Approval successful, proceeding to airdrop.");
           await executeAirdrop(); // Call airdrop AFTER successful approval
         } else {
-          console.error("Approval transaction failed.");
           setErrorMessage("Approval transaction failed. Please try again.");
         }
       } catch (err) {
-        console.error("Approval process error:", err);
         setErrorMessage("Approval failed. Please try again.");
       }
     } else {
-      console.log("Sufficient allowance, proceeding directly to airdrop.");
       await executeAirdrop(); // Call airdrop directly
     }
   }
