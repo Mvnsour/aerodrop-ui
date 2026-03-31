@@ -122,6 +122,28 @@ src/
 
 ---
 
+## Local Testing with Anvil
+
+The `tsender-deployed.json` provides a starting state for testing the UI locally against a [Foundry](https://getfoundry.sh/) Anvil node.
+
+| | Address |
+|---|---|
+| TSender contract | `0x5FbDB2315678afecb367f032d93F642f64180aa3` |
+| Mock token | `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` |
+
+Use the mock token's `mint` or `mintTo` function to get tokens, or use the pre-funded Anvil default account directly:
+
+```
+Address:     0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+Private key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+```
+
+> This account has tokens already minted and is ready to use out of the box.
+
+> ⚠️ These are well-known Anvil test credentials. Never use them on a live network or send real funds to this address.
+
+---
+
 ## Testing
 
 ### Unit Tests (Vitest)
